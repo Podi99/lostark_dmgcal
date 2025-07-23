@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로스트아크 8인 공격대 딜 지분 계산기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" xintegrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoVBL5gI9kLmbG4dGtoxTCabCLH12Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', 'Inter', sans-serif;
+        }
+        select, input {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        input:focus, select:focus {
+            outline: none;
+        }
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+        .mvp-highlight {
+            text-decoration: underline;
+            text-decoration-color: #facc15; /* yellow-400 */
+            text-underline-offset: 4px;
+            text-decoration-thickness: 3px;
+        }
+        @keyframes rainbow-flow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .rainbow-text {
+            background: linear-gradient(to right, #ef4444, #f97316, #eab308, #84cc16, #22c55e, #14b8a6, #06b6d4, #3b82f6, #8b5cf6, #d946ef);
+            background-size: 200% auto;
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            animation: rainbow-flow 3s linear infinite;
+        }
+        .custom-select {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+
+    <div id="capture-area" class="container mx-auto max-w-5xl p-4 sm:p-6 lg:p-8 bg-gray-900">
+        <!-- 헤더 -->
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-cyan-400">⚔️ 로스트아크 8인 공격대 딜 지분 계산기</h1>
+            <p class="text-gray-400 mt-2">각 플레이어의 데미지를 입력하면 지분이 실시간으로 계산됩니다.</p>
+        </header>
+
+        <!-- 계산기 본문 -->
+        <main class="space-y-8">
+            <!-- 레이드 선택 섹션 -->
+            <section id="raid-select-section" class="bg-gray-800/50 p-4 sm:p-6 rounded-xl shadow-lg border border-gray-700">
+                <h2 class="text-2xl font-bold text-white mb-4">잔여 데미지 추정 (선택)</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <select id="raid-select" class="custom-select w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-cyan-500 transition-all">
+                        <option value="">레이드 선택</option>
+                    </select>
+                    <select id="gate-select" class="custom-select w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-cyan-500 transition-all">
+                        <option value="">관문 선택</option>
+                    </select>
+                    <select id="difficulty-select" class="custom-select w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-cyan-500 transition-all">
+                        <option value="">난이도 선택</option>
+                    </select>
+                </div>
+            </section>
+
+            <!-- 파티 1 -->
+            <section id="party1-section" class="bg-gray-800/50 p-4 sm:p-6 rounded-xl shadow-lg border border-gray-700">
+                <h2 class="text-2xl font-bold text-green-400 mb-4 border-b border-gray-600 pb-3">파티 1</h2>
+                <div id="party1-container" class="space-y-3"></div>
+            </section>
+
+            <!-- 파티 2 -->
+            <section id="party2-section" class="bg-gray-800/50 p-4 sm:p-6 rounded-xl shadow-lg border border-gray-700">
+                <h2 class="text-2xl font-bold text-yellow-400 mb-4 border-b border-gray-600 pb-3">파티 2</h2>
+                <div id="party2-container" class="space-y-3"></div>
+            </section>
+
+            <!-- 결과 요약 -->
+            <section class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
+                <h2 class="text-2xl font-bold text-white mb-4">결과 요약</h2>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center bg-gray-900 p-4 rounded-lg">
+                        <span class="text-lg text-gray-300 font-medium">입력된 데미지 총합</span>
+                        <span id="total-damage" class="text-xl md:text-2xl font-bold text-cyan-300">0</span>
+                    </div>
+                    <!-- 잔여 데미지 추정 결과 -->
+                    <div id="remaining-damage-results" class="hidden bg-gray-900/50 p-4 rounded-lg border border-dashed border-gray-600 space-y-2">
+                        <div class="flex justify-between items-center"><span class="text-gray-400">보스 총 체력</span><span id="boss-hp" class="font-medium text-gray-200 text-sm md:text-base">0</span></div>
+                        <div class="flex justify-between items-center"><span class="text-red-400">추정 잔여 데미지</span><span id="remaining-damage" class="font-bold text-red-400 text-sm md:text-base">0</span></div>
+                        <div class="flex justify-between items-center"><span class="text-red-400">잔여 데미지 지분</span><span id="remaining-share" class="font-bold text-red-400">0%</span></div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-green-900/30 p-4 rounded-lg border border-green-500/50">
+                            <h3 class="font-bold text-green-400 mb-2">파티 1 요약</h3>
+                            <div class="flex justify-between text-sm"><span>총 데미지:</span><span id="party1-total-damage" class="text-xs md:text-sm">0</span></div>
+                            <div class="flex justify-between text-sm"><span>공대 내 지분:</span><span id="party1-share">0%</span></div>
+                        </div>
+                        <div class="bg-yellow-900/30 p-4 rounded-lg border border-yellow-500/50">
+                            <h3 class="font-bold text-yellow-400 mb-2">파티 2 요약</h3>
+                            <div class="flex justify-between text-sm"><span>총 데미지:</span><span id="party2-total-damage" class="text-xs md:text-sm">0</span></div>
+                            <div class="flex justify-between text-sm"><span>공대 내 지분:</span><span id="party2-share">0%</span></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <div class="flex justify-center space-x-4 mt-8">
+        <button id="save-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg">결과 저장</button>
+        <button id="reset-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg">초기화</button>
+    </div>
+
+    <footer class="text-center text-sm text-gray-400 opacity-50 pt-8 pb-6">제작자 : 포디(podi_99)</footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Data
+            const bossData = {
+                "카제로스 1막": {
+                    gates: ["1관문", "2관문"],
+                    hp: {
+                        "1관문": { "노말": 161517294610, "하드": 269870428126 },
+                        "2관문": { "노말": 213231745024, "하드": 398607625792 }
+                    }
+                },
+                "카제로스 2막": {
+                    gates: ["1관문", "2관문"],
+                    hp: {
+                        "1관문": { "노말": 275449621248, "하드": 516125060783 },
+                        "2관문": { "노말": 399401950809, "하드": 911160408772 }
+                    }
+                },
+                "카제로스 3막": {
+                    gates: ["1관문", "2관문", "3관문"],
+                    hp: {
+                        "1관문": { "노말": 368773967531, "하드": 652499653375 },
+                        "2관문": { "노말": 334691604286, "하드": 663116555628 },
+                        "3관문": { "노말": 731975350664, "하드": 1473779836172 }
+                    }
+                },
+                "익스트림 카멘": {
+                    gates: ["4관문"],
+                    hp: {
+                        "4관문": { "노말": 510068216261, "하드": 1281863698717 }
+                    }
+                }
+            };
+            const players = [
+                { party: 1, role: '딜러 1' }, { party: 1, role: '딜러 2' }, { party: 1, role: '딜러 3' }, { party: 1, role: '서포터 1' },
+                { party: 2, role: '딜러 4' }, { party: 2, role: '딜러 5' }, { party: 2, role: '딜러 6' }, { party: 2, role: '서포터 2' },
+            ];
+
+            // Elements
+            const raidSelect = document.getElementById('raid-select');
+            const gateSelect = document.getElementById('gate-select');
+            const difficultySelect = document.getElementById('difficulty-select');
+            const party1Container = document.getElementById('party1-container');
+            const party2Container = document.getElementById('party2-container');
+
+            // Functions
+            function formatKoreanNumber(number) {
+                if (number === 0) return '0';
+                if (!number || isNaN(number)) return '0';
+
+                const units = [
+                    { value: 1000000000000, name: '조' },
+                    { value: 100000000, name: '억' },
+                    { value: 10000, name: '만' }
+                ];
+
+                let result = '';
+                let num = number;
+
+                for (const unit of units) {
+                    if (num >= unit.value) {
+                        const val = Math.floor(num / unit.value);
+                        result += `${val.toLocaleString('ko-KR')}${unit.name} `;
+                        num %= unit.value;
+                    }
+                }
+
+                if (num > 0) {
+                    result += `${num.toLocaleString('ko-KR')}`;
+                }
+                
+                if (result.trim() === '') {
+                    return number.toLocaleString('ko-KR');
+                }
+
+                return result.trim();
+            }
+
+            function populateDropdown(selectElement, options, placeholder) {
+                selectElement.innerHTML = `<option value="">${placeholder}</option>`;
+                options.forEach(option => {
+                    selectElement.innerHTML += `<option value="${option}">${option}</option>`;
+                });
+            }
+
+            function updateGateOptions() {
+                const selectedRaid = raidSelect.value;
+                if (selectedRaid && bossData[selectedRaid]) {
+                    populateDropdown(gateSelect, bossData[selectedRaid].gates, "관문 선택");
+                    const difficulties = Object.keys(bossData[selectedRaid].hp[bossData[selectedRaid].gates[0]]);
+                    populateDropdown(difficultySelect, difficulties.map(d => d.charAt(0).toUpperCase() + d.slice(1)), "난이도 선택");
+                } else {
+                    populateDropdown(gateSelect, [], "관문 선택");
+                    populateDropdown(difficultySelect, [], "난이도 선택");
+                }
+                calculateShares();
+            }
+
+            function createPlayerRow(player, index) {
+                const row = document.createElement('div');
+                row.className = `player-row grid grid-cols-1 md:grid-cols-12 gap-2 items-center p-2 rounded-lg bg-gray-700/20`;
+                row.innerHTML = `
+                    <div class="md:col-span-2"><input type="text" placeholder="닉네임" id="name-${index}" class="nickname-input w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-cyan-500" value="${player.role}"></div>
+                    <div class="md:col-span-2"><input type="text" placeholder="직업" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-cyan-500"></div>
+                    <div class="md:col-span-3"><input type="number" placeholder="가한 데미지" id="damage-${index}" class="damage-input w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-cyan-500"></div>
+                    <div class="md:col-span-4"><div class="w-full bg-gray-600 rounded-full h-6 relative overflow-hidden"><div id="share-bar-${index}" class="bg-gradient-to-r h-full rounded-full transition-all duration-500 ease-out" style="width: 0%;"></div><span id="share-text-${index}" class="absolute inset-0 flex items-center justify-center text-white font-bold">0%</span></div></div>
+                    <div id="mvp-title-${index}" class="md:col-span-1 text-center text-xs font-bold"></div>
+                `;
+                return row;
+            }
+            
+            function createHeaderRow() {
+                const headerHtml = `<div class="hidden md:grid md:grid-cols-12 gap-2 text-gray-400 font-bold mb-2 px-2"><div class="md:col-span-2">닉네임</div><div class="md:col-span-2">직업</div><div class="md:col-span-3">가한 데미지</div><div class="md:col-span-4">데미지 지분</div><div class="md:col-span-1 text-center">칭호</div></div>`;
+                party1Container.insertAdjacentHTML('beforebegin', headerHtml);
+                party2Container.insertAdjacentHTML('beforebegin', headerHtml);
+            }
+
+            function calculateShares() {
+                const damageInputs = document.querySelectorAll('.damage-input');
+                let totalDamage = 0, party1Damage = 0, party2Damage = 0, maxShare = 0, mvpIndex = -1;
+                const damages = [];
+
+                damageInputs.forEach((input, index) => {
+                    const damage = parseFloat(input.value) || 0;
+                    damages.push(damage);
+                    totalDamage += damage;
+                    players[index].party === 1 ? party1Damage += damage : party2Damage += damage;
+                });
+
+                document.getElementById('total-damage').textContent = formatKoreanNumber(totalDamage);
+                document.getElementById('party1-total-damage').textContent = formatKoreanNumber(party1Damage);
+                document.getElementById('party2-total-damage').textContent = formatKoreanNumber(party2Damage);
+                document.getElementById('party1-share').textContent = `${totalDamage > 0 ? (party1Damage / totalDamage * 100).toFixed(2) : 0}%`;
+                document.getElementById('party2-share').textContent = `${totalDamage > 0 ? (party2Damage / totalDamage * 100).toFixed(2) : 0}%`;
+                
+                damages.forEach((damage, index) => {
+                    const share = totalDamage > 0 ? (damage / totalDamage) * 100 : 0;
+                    if (share > 0 && share >= maxShare) { maxShare = share; mvpIndex = index; }
+                    
+                    document.getElementById(`share-bar-${index}`).style.width = `${share.toFixed(2)}%`;
+                    document.getElementById(`share-text-${index}`).textContent = `${share.toFixed(2)}%`;
+
+                    const mvpTitleEl = document.getElementById(`mvp-title-${index}`);
+                    mvpTitleEl.className = 'md:col-span-1 text-center text-xs font-bold';
+                    mvpTitleEl.textContent = '';
+                    if (share >= 20) { mvpTitleEl.textContent = '잔혹한 혈투사'; mvpTitleEl.classList.add('text-red-400'); } 
+                    else if (share >= 15) { mvpTitleEl.textContent = '강직한 투사'; mvpTitleEl.classList.add('text-orange-400'); } 
+                    else if (share >= 10) { mvpTitleEl.textContent = '투사'; mvpTitleEl.classList.add('text-yellow-400'); }
+                });
+
+                document.querySelectorAll('.nickname-input').forEach((input, index) => {
+                    input.classList.remove('mvp-highlight');
+                    const shareBarEl = document.getElementById(`share-bar-${index}`);
+                    shareBarEl.classList.remove('from-yellow-400', 'to-orange-500');
+                    shareBarEl.classList.add('from-cyan-500', 'to-blue-500');
+                });
+
+                if (mvpIndex !== -1 && totalDamage > 0) {
+                    document.getElementById(`name-${mvpIndex}`).classList.add('mvp-highlight');
+                    const mvpBar = document.getElementById(`share-bar-${mvpIndex}`);
+                    mvpBar.classList.remove('from-cyan-500', 'to-blue-500');
+                    mvpBar.classList.add('from-yellow-400', 'to-orange-500');
+                    const mvpTitle = document.getElementById(`mvp-title-${mvpIndex}`);
+                    if (mvpTitle.textContent) mvpTitle.classList.add('rainbow-text');
+                }
+
+                const selectedRaid = raidSelect.value;
+                const selectedGate = gateSelect.value;
+                const selectedDifficulty = difficultySelect.value.toLowerCase();
+                const resultsContainer = document.getElementById('remaining-damage-results');
+
+                if (selectedRaid && selectedGate && selectedDifficulty && bossData[selectedRaid]?.hp[selectedGate]?.[selectedDifficulty]) {
+                    const bossHp = bossData[selectedRaid].hp[selectedGate][selectedDifficulty];
+                    const remainingDamage = bossHp - totalDamage;
+                    const remainingShare = bossHp > 0 ? (remainingDamage / bossHp) * 100 : 0;
+
+                    document.getElementById('boss-hp').textContent = formatKoreanNumber(bossHp);
+                    document.getElementById('remaining-damage').textContent = remainingDamage > 0 ? formatKoreanNumber(remainingDamage) : 0;
+                    document.getElementById('remaining-share').textContent = `${remainingDamage > 0 ? remainingShare.toFixed(2) : 0}%`;
+                    resultsContainer.classList.remove('hidden');
+                } else {
+                    resultsContainer.classList.add('hidden');
+                }
+            }
+
+            function initialize() {
+                populateDropdown(raidSelect, Object.keys(bossData), "레이드 선택");
+                createHeaderRow();
+                players.forEach((player, index) => {
+                    const row = createPlayerRow(player, index);
+                    player.party === 1 ? party1Container.appendChild(row) : party2Container.appendChild(row);
+                });
+                
+                document.querySelectorAll('.damage-input').forEach(input => input.addEventListener('input', calculateShares));
+                raidSelect.addEventListener('change', updateGateOptions);
+                gateSelect.addEventListener('change', calculateShares);
+                difficultySelect.addEventListener('change', calculateShares);
+                
+                document.getElementById('reset-button').addEventListener('click', () => {
+                    document.querySelectorAll('input[type="text"], input[type="number"]').forEach(input => {
+                        if (input.classList.contains('nickname-input')) {
+                            const index = parseInt(input.id.split('-')[1]);
+                            input.value = players[index].role;
+                        } else { input.value = ''; }
+                    });
+                    raidSelect.value = '';
+                    updateGateOptions();
+                });
+
+                document.getElementById('save-button').addEventListener('click', () => {
+                    html2canvas(document.getElementById('capture-area'), {
+                        backgroundColor: '#111827', useCORS: true,
+                        onclone: (doc) => { doc.getElementById('capture-area').style.padding = '2rem'; }
+                    }).then(canvas => {
+                        const link = document.createElement('a');
+                        link.download = `lostark_dps_result_${Date.now()}.png`;
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                    });
+                });
+                
+                updateGateOptions();
+            }
+
+            initialize();
+        });
+    </script>
+</body>
+</html>
